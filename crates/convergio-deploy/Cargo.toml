@@ -1,0 +1,31 @@
+[package]
+name = "convergio-deploy"
+description = "Deployment automation — rolling deploys, rollback, environment management"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+convergio-types = { workspace = true }
+convergio-db = { workspace = true }
+convergio-telemetry = { workspace = true }
+axum = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+sha2 = { workspace = true }
+rusqlite = { workspace = true }
+r2d2 = { workspace = true }
+r2d2_sqlite = { workspace = true }
+thiserror = { workspace = true }
+dirs = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
