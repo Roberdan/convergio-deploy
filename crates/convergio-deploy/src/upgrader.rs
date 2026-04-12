@@ -198,5 +198,6 @@ fn extract_and_replace(archive_bytes: &[u8], target: &Path) -> Result<(), String
 fn hex_sha256(data: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(data);
-    format!("{:x}", hasher.finalize())
+    let hash = hasher.finalize();
+    hash.iter().map(|b| format!("{b:02x}")).collect()
 }
