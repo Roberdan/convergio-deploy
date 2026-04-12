@@ -105,6 +105,9 @@ async fn trigger_peer_upgrade(
     version: &str,
     auth_token: &str,
 ) -> Result<(), String> {
+    // Validate peer URL before making any request (defense-in-depth)
+    crate::validation::validate_peer_url(peer_url)?;
+
     let url = format!("{peer_url}/api/deploy/upgrade");
     let client = Client::new();
     let resp = client
@@ -118,7 +121,14 @@ async fn trigger_peer_upgrade(
     if resp.status().is_success() {
         Ok(())
     } else {
+        let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
-        Err(format!("Peer returned error: {body}"))
+        // Truncate response body to prevent log injection
+        let body_truncated = if body.len() > 500 {
+            format!("{}...[truncated]", &body[..500])
+        } else {
+            body
+        };
+        Err(format!("Peer returned HTTP {status}: {body_truncated}"))
     }
 }

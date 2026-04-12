@@ -60,7 +60,7 @@ pub async fn upgrade(db: &DeployDb, target_tag: Option<&str>) -> Result<UpgradeR
         }
         tracing::info!("SHA256 verified");
     } else {
-        tracing::warn!("No checksum file — skipping verification");
+        tracing::warn!("No checksum file in release — integrity cannot be verified");
     }
 
     // 3. Backup current binary
@@ -133,16 +133,15 @@ fn backup_binary(exe: &Path) -> Result<PathBuf, String> {
 }
 
 fn extract_and_replace(archive_bytes: &[u8], target: &Path) -> Result<(), String> {
-    // Determine if tar.gz or zip based on magic bytes
-    let temp_dir = std::env::temp_dir().join("convergio-upgrade");
+    let data_dir = convergio_types::platform_paths::convergio_data_dir();
+    let temp_dir = data_dir.join("upgrade-staging");
     let _ = std::fs::remove_dir_all(&temp_dir);
-    std::fs::create_dir_all(&temp_dir).map_err(|e| format!("Cannot create temp dir: {e}"))?;
+    std::fs::create_dir_all(&temp_dir).map_err(|e| format!("Cannot create staging dir: {e}"))?;
 
     let archive_path = temp_dir.join("archive");
     std::fs::write(&archive_path, archive_bytes)
         .map_err(|e| format!("Write archive failed: {e}"))?;
 
-    // Try tar.gz first (Linux/macOS), then assume single binary
     let binary_name = if cfg!(target_os = "windows") {
         "convergio.exe"
     } else {
@@ -151,7 +150,7 @@ fn extract_and_replace(archive_bytes: &[u8], target: &Path) -> Result<(), String
 
     let extracted = temp_dir.join(binary_name);
 
-    // Attempt tar extraction (--strip-components prevents path traversal)
+    // Attempt tar extraction with --strip-components to flatten
     let tar_result = std::process::Command::new("tar")
         .args([
             "xzf",
@@ -163,7 +162,17 @@ fn extract_and_replace(archive_bytes: &[u8], target: &Path) -> Result<(), String
         .output();
 
     if tar_result.is_ok() && extracted.exists() {
-        // Extracted from archive
+        // Validate extracted binary is within temp_dir (path traversal check)
+        let canonical_temp = temp_dir
+            .canonicalize()
+            .map_err(|e| format!("Cannot canonicalize temp dir: {e}"))?;
+        let canonical_extracted = extracted
+            .canonicalize()
+            .map_err(|e| format!("Cannot canonicalize extracted: {e}"))?;
+        if !canonical_extracted.starts_with(&canonical_temp) {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+            return Err("Path traversal detected in archive — aborting".into());
+        }
     } else {
         // Maybe it's a raw binary
         std::fs::rename(&archive_path, &extracted)
