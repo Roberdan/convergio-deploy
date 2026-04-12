@@ -60,6 +60,19 @@ cargo deny check
 - [convergio-sdk](https://github.com/Roberdan/convergio-sdk) — Core types, telemetry, security, db
 - [convergio](https://github.com/Roberdan/convergio) — Main daemon
 
+## Security
+
+This crate handles binary self-upgrades and fleet-wide push deployments.
+Security measures include:
+
+- **Input validation** — version tags and peer URLs are validated before use
+- **SSRF protection** — peer URLs must be HTTPS; internal/metadata IPs are blocked
+- **Path traversal prevention** — tar extraction output is canonicalized and validated
+- **SHA256 verification** — downloaded binaries are checksum-verified when available
+- **Backup + rollback** — failed upgrades automatically rollback to previous binary
+
+See [ADR-002](docs/adr/002-audit-security-fixes.md) for full audit details.
+
 ## License
 
 Convergio Community License v1.3 — see [LICENSE](LICENSE).

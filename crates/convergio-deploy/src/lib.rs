@@ -9,6 +9,7 @@ pub mod schema;
 pub mod types;
 pub mod update_check;
 pub mod upgrader;
+pub mod validation;
 
 pub use ext::DeployExtension;
 pub mod mcp_defs;

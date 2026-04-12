@@ -14,6 +14,8 @@ pub async fn fetch_latest_release() -> Result<Release, String> {
 
 /// Fetch a specific release by tag.
 pub async fn fetch_release_by_tag(tag: &str) -> Result<Release, String> {
+    // Validate tag to prevent URL injection
+    crate::validation::validate_version_tag(tag)?;
     let url = format!("https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases/tags/{tag}");
     fetch_release(&url).await
 }
