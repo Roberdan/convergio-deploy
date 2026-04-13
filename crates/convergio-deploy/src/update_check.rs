@@ -26,12 +26,14 @@ pub async fn check_and_notify(pool: ConnPool) -> Result<(), String> {
 
         // Store notification in DB for cockpit display
         if let Ok(conn) = pool.get() {
-            let _ = conn.execute(
+            if let Err(e) = conn.execute(
                 "INSERT OR REPLACE INTO deploy_notifications \
                  (id, current_version, available_version, checked_at) \
                  VALUES ('latest', ?1, ?2, datetime('now'))",
                 rusqlite::params![CURRENT_VERSION, latest],
-            );
+            ) {
+                tracing::warn!("Failed to store update notification: {e}");
+            }
         }
     }
 

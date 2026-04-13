@@ -100,6 +100,15 @@ async fn push_parallel(
     Ok(updated)
 }
 
+/// UTF-8 safe truncation — avoids panic on multi-byte boundaries.
+fn truncate_utf8(s: &str, max_bytes: usize) -> String {
+    if s.len() <= max_bytes {
+        return s.to_string();
+    }
+    let truncated = &s[..s.floor_char_boundary(max_bytes)];
+    format!("{truncated}...[truncated]")
+}
+
 async fn trigger_peer_upgrade(
     peer_url: &str,
     version: &str,
@@ -124,11 +133,7 @@ async fn trigger_peer_upgrade(
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
         // Truncate response body to prevent log injection
-        let body_truncated = if body.len() > 500 {
-            format!("{}...[truncated]", &body[..500])
-        } else {
-            body
-        };
+        let body_truncated = truncate_utf8(&body, 500);
         Err(format!("Peer returned HTTP {status}: {body_truncated}"))
     }
 }

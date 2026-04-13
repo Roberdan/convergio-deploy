@@ -132,7 +132,7 @@ fn check_disk_space() -> DiagCheck {
 
     let message = format!(
         "Data dir: {}, DB size: {} MB",
-        data_dir.display(),
+        sanitize_path(&data_dir),
         db_size / (1024 * 1024)
     );
 
@@ -158,7 +158,7 @@ fn check_config() -> DiagCheck {
         Some(path) => DiagCheck {
             name: "config".into(),
             passed: true,
-            message: format!("Found: {}", path.display()),
+            message: format!("Found: {}", sanitize_path(path)),
             duration_ms: start.elapsed().as_millis() as u64,
         },
         None => DiagCheck {
@@ -168,6 +168,16 @@ fn check_config() -> DiagCheck {
             duration_ms: start.elapsed().as_millis() as u64,
         },
     }
+}
+
+/// Replace home directory with ~ to avoid leaking usernames.
+fn sanitize_path(p: &std::path::Path) -> String {
+    let s = p.display().to_string();
+    if let Some(home) = dirs::home_dir() {
+        let home_str = home.to_string_lossy();
+        return s.replace(home_str.as_ref(), "~");
+    }
+    s
 }
 
 async fn check_github_api() -> DiagCheck {

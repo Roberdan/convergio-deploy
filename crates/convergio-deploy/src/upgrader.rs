@@ -5,9 +5,26 @@ use crate::schema::DeployDb;
 use crate::types::{UpgradeRecord, UpgradeStatus};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// Prevents concurrent upgrade operations.
+static UPGRADE_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
 /// Run the self-upgrade flow for the current node.
 pub async fn upgrade(db: &DeployDb, target_tag: Option<&str>) -> Result<UpgradeRecord, String> {
+    // Guard against concurrent upgrades
+    if UPGRADE_IN_PROGRESS
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return Err("An upgrade is already in progress".into());
+    }
+    let result = upgrade_inner(db, target_tag).await;
+    UPGRADE_IN_PROGRESS.store(false, Ordering::SeqCst);
+    result
+}
+
+async fn upgrade_inner(db: &DeployDb, target_tag: Option<&str>) -> Result<UpgradeRecord, String> {
     let release = match target_tag {
         Some(tag) => github::fetch_release_by_tag(tag).await?,
         None => github::fetch_latest_release().await?,
