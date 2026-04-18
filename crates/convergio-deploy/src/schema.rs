@@ -20,11 +20,11 @@ impl DeployDb {
         let conn = match self.pool.get() {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!("DB error: {e}");
+                tracing::error!("DB pool error on insert_upgrade: {e}");
                 return;
             }
         };
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "INSERT INTO deploy_upgrades \
              (id, from_version, to_version, status, started_at, backup_path) \
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -36,18 +36,20 @@ impl DeployDb {
                 record.started_at,
                 record.backup_path,
             ],
-        );
+        ) {
+            tracing::error!("insert_upgrade failed: {e}");
+        }
     }
 
     pub fn update_upgrade(&self, record: &UpgradeRecord) {
         let conn = match self.pool.get() {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!("DB error: {e}");
+                tracing::error!("DB pool error on update_upgrade: {e}");
                 return;
             }
         };
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "UPDATE deploy_upgrades \
              SET status = ?1, completed_at = ?2, error = ?3 \
              WHERE id = ?4",
@@ -57,7 +59,9 @@ impl DeployDb {
                 record.error,
                 record.id,
             ],
-        );
+        ) {
+            tracing::error!("update_upgrade failed: {e}");
+        }
     }
 
     pub fn list_upgrades(&self, limit: u32) -> Vec<UpgradeRecord> {
@@ -95,12 +99,12 @@ impl DeployDb {
         let conn = match self.pool.get() {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!("DB error: {e}");
+                tracing::error!("DB pool error on insert_push_job: {e}");
                 return;
             }
         };
         let peers_json = serde_json::to_string(&job.peers).unwrap_or_default();
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "INSERT INTO deploy_push_jobs \
              (id, version, strategy, peers_json, started_at) \
              VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -111,21 +115,25 @@ impl DeployDb {
                 peers_json,
                 job.started_at,
             ],
-        );
+        ) {
+            tracing::error!("insert_push_job failed: {e}");
+        }
     }
 
     pub fn update_push_job(&self, job: &PushAllJob) {
         let conn = match self.pool.get() {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!("DB error: {e}");
+                tracing::error!("DB pool error on update_push_job: {e}");
                 return;
             }
         };
         let peers_json = serde_json::to_string(&job.peers).unwrap_or_default();
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "UPDATE deploy_push_jobs SET peers_json = ?1 WHERE id = ?2",
             rusqlite::params![peers_json, job.id],
-        );
+        ) {
+            tracing::error!("update_push_job failed: {e}");
+        }
     }
 }
