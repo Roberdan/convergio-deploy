@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/Roberdan/convergio-deploy/compare/v0.1.4...v0.1.5) (2026-04-18)
+
+
+### Bug Fixes
+
+* security and quality audit pass 2 ([45d180e](https://github.com/Roberdan/convergio-deploy/commit/45d180e248df8fee997bdfd259c3e5c6385b4b30))
+* security and quality audit pass 2 ([f2cf880](https://github.com/Roberdan/convergio-deploy/commit/f2cf88041640d20608b5e4c37d705f2db251791b))
+
 ## [0.1.4](https://github.com/Roberdan/convergio-deploy/compare/v0.1.3...v0.1.4) (2026-04-13)
 
 
